@@ -1,0 +1,18 @@
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")   // isi DATABASE_URL="mysql://user:pass@host:3306/dbname"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Logbook {
+  id         Int      @id @default(autoincrement())
+  name       String
+  nik        String
+  department String
+  remarks    String?
+  photoUrl   String
+  timestamp  DateTime @default(now())
+}
