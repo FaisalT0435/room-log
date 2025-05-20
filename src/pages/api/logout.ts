@@ -1,0 +1,1 @@
+import type{NextApiRequest,NextApiResponse}from'next';import{withSessionRoute}from'@/lib/session';export default withSessionRoute((req:NextApiRequest,res:NextApiResponse)=>{req.session.destroy();res.status(200).json({ok:true});});

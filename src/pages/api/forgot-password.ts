@@ -1,0 +1,1 @@
+import type{NextApiRequest,NextApiResponse}from'next';import{withSessionRoute}from'@/lib/session';export default withSessionRoute((req,res)=>{const{username}=req.body;res.status(200).json({ok:true,message:'Reset link sent if user exists.'});});
