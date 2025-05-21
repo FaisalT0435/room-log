@@ -58,3 +58,62 @@ export default function Background() {
 
   return <div ref={vantaRef} id="vanta-dots" className="fixed inset-0 -z-10" />;
 }
+
+// 'use client';
+
+// import { useRef, useEffect } from 'react';
+
+// export default function Background() {
+//   const containerRef = useRef<HTMLDivElement>(null);
+//   const vantaEffect = useRef<any>(null);
+
+//   useEffect(() => {
+//     const loadScript = (src: string) =>
+//       new Promise<void>((resolve, reject) => {
+//         const script = document.createElement('script');
+//         script.src = src;
+//         script.async = true;
+//         script.onload = () => resolve();
+//         script.onerror = () => reject(new Error(`Failed to load script ${src}`));
+//         document.body.appendChild(script);
+//       });
+
+//     (async () => {
+//       try {
+//         // Load Three.js (r124 for compatibility)
+//         await loadScript('https://cdnjs.cloudflare.com/ajax/libs/three.js/r124/three.min.js');
+//         // Load Vanta Birds effect
+//         await loadScript('https://cdn.jsdelivr.net/npm/vanta@0.5.21/dist/vanta.birds.min.js');
+
+//         if (!containerRef.current || !(window as any).VANTA?.BIRDS) {
+//           console.error('VANTA.BIRDS not available');
+//           return;
+//         }
+
+//         // Initialize Vanta Birds
+//         vantaEffect.current = (window as any).VANTA.BIRDS({
+//           el: containerRef.current,
+//           mouseControls: true,
+//           touchControls: true,
+//           gyroControls: false,
+//           minHeight: 200.0,
+//           minWidth: 200.0,
+//           scale: 1.0,
+//           scaleMobile: 1.0,
+//           backgroundColor: 0xffffff,
+//           wingSpan: 40.0
+//         });
+//       } catch (err) {
+//         console.error('Error initializing VANTA.BIRDS:', err);
+//       }
+//     })();
+
+//     return () => {
+//       if (vantaEffect.current) {
+//         vantaEffect.current.destroy();
+//       }
+//     };
+//   }, []);
+
+//   return <div ref={containerRef} id="vanta-birds" className="fixed inset-0 -z-10" />;
+// }
