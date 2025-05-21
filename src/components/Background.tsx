@@ -1,38 +1,34 @@
-// File: src/app/components/Background.tsx
-
 'use client';
 
-import { useRef, useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 export default function Background() {
   const vantaRef = useRef<HTMLDivElement>(null);
   const vantaEffect = useRef<any>(null);
 
   useEffect(() => {
-    // Helper to load external scripts
     const loadScript = (src: string) =>
       new Promise<void>((resolve, reject) => {
-        const script = document.createElement('script');
-        script.src = src;
-        script.async = true;
-        script.onload = () => resolve();
-        script.onerror = () => reject(`Failed to load ${src}`);
-        document.head.appendChild(script);
+        const s = document.createElement('script');
+        s.src = src;
+        s.async = true;
+        s.onload = () => resolve();
+        s.onerror = () => reject(new Error(`Failed to load script ${src}`));
+        document.body.appendChild(s);
       });
 
-    // Sequentially load Three.js and Vanta
     (async () => {
       try {
-        await loadScript('https://cdn.jsdelivr.net/npm/three@0.134.0/build/three.min.js');
-        await loadScript('https://cdn.jsdelivr.net/npm/vanta@0.5.21/dist/vanta.birds.min.js');
+        // Load Three.js and Vanta dots plugin
+        await loadScript('https://cdnjs.cloudflare.com/ajax/libs/three.js/r124/three.min.js');
+        await loadScript('https://cdn.jsdelivr.net/npm/vanta@0.5.21/dist/vanta.dots.min.js');
 
-        if (vantaRef.current && !(window as any).VANTA) {
-          console.error('VANTA library not found on window');
+        if (!vantaRef.current || !(window as any).VANTA?.DOTS) {
+          console.error('VANTA DOTS not available');
           return;
         }
 
-        // @ts-ignore
-        vantaEffect.current = (window as any).VANTA.BIRDS({
+        vantaEffect.current = (window as any).VANTA.DOTS({
           el: vantaRef.current,
           mouseControls: true,
           touchControls: true,
@@ -41,17 +37,15 @@ export default function Background() {
           minWidth: 200.0,
           scale: 1.0,
           scaleMobile: 1.0,
-          backgroundColor: 0xffffff,
-          color2: 0xe3b531,
-          colorMode: 'lerp',
-          birdSize: 0.8,
-          wingSpan: 23.0,
-          separation: 21.0,
-          quantity: 4.0,
-          backgroundAlpha: 0.66,
+          color: 0xff001b,
+          color2: 0xff2020,
+          backgroundColor: 0xf7f7f7,
+          size: 3.4,
+          spacing: 32.0,
+          showLines: false,
         });
       } catch (err) {
-        console.error('Vanta initialization error:', err);
+        console.error(err);
       }
     })();
 
@@ -62,5 +56,5 @@ export default function Background() {
     };
   }, []);
 
-  return <div ref={vantaRef} id="vanta-bg" className="fixed inset-0 -z-10" />;
+  return <div ref={vantaRef} id="vanta-dots" className="fixed inset-0 -z-10" />;
 }
