@@ -1,4 +1,5 @@
 // File: src/app/(protected)/absen/page.tsx
+
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
@@ -10,9 +11,11 @@ export default function AbsenPage() {
   const [streamReady, setStreamReady] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [capturedPhoto, setCapturedPhoto] = useState<Blob | null>(null);
+  const [submitMessage, setSubmitMessage] = useState<string | null>(null);
 
   const [name, setName] = useState('');
   const [nik, setNik] = useState('');
+  const [department, setDepartment] = useState('');
   const [remarks, setRemarks] = useState('');
   const [timestamp] = useState(() => {
     const d = new Date();
@@ -23,100 +26,127 @@ export default function AbsenPage() {
     );
   });
 
+  // Initialize camera once on mount
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const media = navigator.mediaDevices;
+    if (!media?.getUserMedia) {
+      console.error('Camera API not available');
+      return;
+    }
+
     let localStream: MediaStream;
-    navigator.mediaDevices
-      .getUserMedia({ video: true })
+    media.getUserMedia({ video: true })
       .then((s) => {
         localStream = s;
         if (videoRef.current) {
           videoRef.current.srcObject = s;
           videoRef.current.onloadedmetadata = () => {
-            videoRef.current?.play();
+            videoRef.current!.play();
             setStreamReady(true);
           };
         }
       })
-      .catch((err) => {
-        console.error('Error opening camera:', err);
-        alert('Gagal mengakses kamera');
-      });
+      .catch((err) => console.error('Error accessing camera:', err));
+
     return () => localStream?.getTracks().forEach((t) => t.stop());
   }, []);
 
+  // Capture frame into Blob + preview URL
   function capture() {
-    if (!streamReady || !videoRef.current || !canvasRef.current) return;
-    const v = videoRef.current;
-    const c = canvasRef.current;
-    c.width = v.videoWidth;
-    c.height = v.videoHeight;
-    const ctx = c.getContext('2d')!;
-    ctx.drawImage(v, 0, 0);
+    if (!streamReady || !videoRef.current || !canvasRef.current) {
+      alert('Camera belum siap, tunggu beberapa detik.');
+      return;
+    }
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext('2d')!;
+    ctx.drawImage(video, 0, 0);
 
-    c.toBlob((blob) => {
-      if (!blob) return;
-      setCapturedPhoto(blob);
-      previewUrl && URL.revokeObjectURL(previewUrl);
-      setPreviewUrl(URL.createObjectURL(blob));
+    canvas.toBlob((blob) => {
+      if (blob) {
+        setCapturedPhoto(blob);
+        if (previewUrl) URL.revokeObjectURL(previewUrl);
+        setPreviewUrl(URL.createObjectURL(blob));
+      }
     }, 'image/jpeg', 0.8);
   }
 
-  // Clear preview to retake
+  // Reset preview to retake
   function retake() {
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
     setPreviewUrl(null);
     setCapturedPhoto(null);
+    setSubmitMessage(null);
   }
 
+  // Submit form + photo to API
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (!capturedPhoto) return alert('Silakan ambil foto dulu.');
-
+    if (!capturedPhoto) {
+      setSubmitMessage('Silakan ambil foto dulu.');
+      return;
+    }
     const form = new FormData();
     form.append('name', name);
     form.append('nik', nik);
+    form.append('department', department);
     form.append('remarks', remarks);
     form.append('timestamp', timestamp);
     form.append('photo', capturedPhoto, 'capture.jpg');
 
-    const res = await fetch('/api/absen', {
-      method: 'POST',
-      body: form,
-      credentials: 'include',
-    });
-
-    if (res.ok) {
-      alert('Absen sukses');
-      retake();
-      setName(''); setNik(''); setRemarks('');
-    } else {
-      const data = await res.json();
-      alert(data.message || 'Absen gagal');
+    try {
+      const res = await fetch('/api/absen', {
+        method: 'POST',
+        body: form,
+        credentials: 'include',
+      });
+      if (res.ok) {
+        setSubmitMessage('Submit berhasil!');
+        retake();
+        setName('');
+        setNik('');
+        setDepartment('');
+        setRemarks('');
+      } else {
+        const { message } = await res.json();
+        setSubmitMessage(message || 'Submit gagal.');
+      }
+    } catch {
+      setSubmitMessage('Submit gagal. Periksa koneksi.');
     }
   }
 
   return (
     <>
       <h1 className="text-2xl font-semibold mb-6">Absen Masuk Ruangan</h1>
+      {submitMessage && (
+        <div className="mb-4 p-2 rounded bg-gray-100 text-center">
+          {submitMessage}
+        </div>
+      )}
       <div className="flex flex-col md:flex-row gap-8">
-        {/* Camera + Preview */}
-        <div className="md:w-1/2 relative">
-          {!previewUrl ? (
-            <video
-              ref={videoRef}
-              autoPlay
-              muted
-              playsInline
-              className="w-full rounded-lg border bg-black"
-            />
-          ) : (
-            <img
-              src={previewUrl}
-              alt="Preview"
-              className="w-full rounded-lg border object-cover"
-            />
-          )}
-
-          {/* Bila sudah capture, tombol jadi Retake */}
+        {/* Camera / Preview */}
+        <div className="md:w-1/2">
+          <div className="relative">
+            {!previewUrl ? (
+              <video
+                ref={videoRef}
+                autoPlay
+                muted
+                playsInline
+                className="w-full rounded-lg border bg-black"
+              />
+            ) : (
+              <img
+                src={previewUrl}
+                alt="Preview"
+                className="w-full rounded-lg border object-cover"
+              />
+            )}
+          </div>
           <button
             onClick={previewUrl ? retake : capture}
             disabled={!streamReady}
@@ -128,10 +158,12 @@ export default function AbsenPage() {
                 : 'bg-gray-400 cursor-not-allowed'
             }`}
           >
-            {previewUrl ? 'Ambil Ulang' : streamReady ? 'Ambil Foto' : 'Menyiapkan Kamera...'}
+            {previewUrl
+              ? 'Ambil Ulang'
+              : streamReady
+              ? 'Ambil Foto'
+              : 'Menyiapkan Kamera...'}
           </button>
-
-          {/* hidden canvas for blob conversion */}
           <canvas ref={canvasRef} className="hidden" />
         </div>
 
@@ -157,6 +189,16 @@ export default function AbsenPage() {
               className="w-full border p-2 rounded text-black"
             />
           </div>
+                    <div>
+            <label className="block text-gray-700">Department</label>
+            <input
+              type="text"
+              value={department}
+              onChange={(e) => setDepartment(e.target.value)}
+              required
+              className="w-full border p-2 rounded text-black"
+            />
+          </div>
           <div>
             <label className="block text-gray-700">Keterangan</label>
             <textarea
@@ -178,7 +220,9 @@ export default function AbsenPage() {
             type="submit"
             disabled={!capturedPhoto}
             className={`w-full py-2 rounded text-white ${
-              capturedPhoto ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-400'
+              capturedPhoto
+                ? 'bg-blue-600 hover:bg-blue-700'
+                : 'bg-gray-400 cursor-not-allowed'
             }`}
           >
             Submit Absen

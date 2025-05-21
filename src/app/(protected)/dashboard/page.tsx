@@ -1,3 +1,5 @@
+// File: src/app/(protected)/dashboard/page.tsx
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -12,142 +14,127 @@ import {
   Pie,
   Cell,
   Legend,
-  Tooltip as PieTooltip
+  Tooltip as PieTooltip,
 } from 'recharts';
 
-interface DayCount { date: string; count: number }
-interface Last { name: string; timestamp: string; department: string }
-interface Dept { department: string; visits: number }
+type CountRow = { month: string; count: number };
+type LastRow  = { name: string; department: string; timestamp: string };
+type DeptRow  = { department: string; visits: number };
+type Summary  = { thisMonthCount: number; yearToDateCount: number };
 
 export default function DashboardPage() {
-  const [dayCounts, setDayCounts] = useState<DayCount[]>([]);
-  const [deptData, setDeptData] = useState<Dept[]>([]);
-  const [last, setLast] = useState<Last | null>(null);
+  const [monthlyData, setMonthlyData] = useState<CountRow[]>([]);
+  const [deptData, setDeptData]       = useState<DeptRow[]>([]);
+  const [lastRows, setLastRows]       = useState<LastRow[]>([]);
+  const [summary, setSummary]         = useState<Summary>({ thisMonthCount: 0, yearToDateCount: 0 });
 
-  // Fetch data
   useEffect(() => {
     fetch('/api/dashboard')
-      .then(r => r.json())
-      .then(({ counts, last }) => {
-        setDayCounts(counts as DayCount[]);
-        setLast(last as Last);
-      });
-    fetch('/api/summary')
-      .then(r => r.json())
-      .then(({ perDept }) => {
-        setDeptData(perDept as Dept[]);
-      });
+      .then(res => res.json())
+      .then(data => {
+        setMonthlyData(data.counts.map((r: any) => ({ month: r.month, count: Number(r.count) })));
+        setDeptData(data.perDept.map((r: any) => ({ department: r.department, visits: Number(r.visits) })));
+        setLastRows(data.last || []);
+        setSummary({ thisMonthCount: Number(data.summary.thisMonthCount), yearToDateCount: Number(data.summary.yearToDateCount) });
+      })
+      .catch(console.error);
   }, []);
 
-  // Build monthly totals
-  const monthMap: Record<string, number> = {};
-  dayCounts.forEach(({ date, count }) => {
-    const m = date.slice(0, 7); // "YYYY-MM"
-    monthMap[m] = (monthMap[m] || 0) + count;
-  });
-  const monthlyData = Object.entries(monthMap)
-    .map(([month, count]) => ({ month, count }))
-    .sort((a, b) => a.month.localeCompare(b.month));
-
-  // Year-to-date and current/previous month comparisons
-  const now = new Date();
-  const currentMonth = now.toISOString().slice(0, 7);
-  const prev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-  const prevMonth = prev.toISOString().slice(0, 7);
-
-  const currentCount = monthMap[currentMonth] || 0;
-  const prevCount = monthMap[prevMonth] || 0;
-  const yearTotal = Object.entries(monthMap)
-    .filter(([m]) => m.slice(0, 4) === String(now.getFullYear()))
-    .reduce((sum, [, c]) => sum + c, 0);
-  const delta = prevCount
-    ? Math.round(((currentCount - prevCount) / prevCount) * 100)
-    : null;
-
-  // Pie chart data (dept percentage)
+  // Pie data
   const totalVisits = deptData.reduce((sum, d) => sum + d.visits, 0);
-  const pieData = deptData.map(d => ({
-    name: d.department,
-    value: totalVisits ? (d.visits / totalVisits) * 100 : 0
-  }));
-  const COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff8042', '#a4de6c'];
+  const pieData = deptData.map(d => ({ name: d.department, value: totalVisits ? (d.visits / totalVisits) * 100 : 0 }));
+  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#AF19FF'];
 
   return (
-    <div className="space-y-8 p-6">
-      <h1 className="text-2xl font-semibold">Dashboard</h1>
-
-      {/* Top row: charts */}
-      <div className="grid grid-cols-2 gap-6">
-        {/* Bar chart: monthly visitors */}
-        <div className="bg-white p-4 rounded shadow h-96">
-          <h2 className="text-lg mb-2">Pengunjung per Bulan</h2>
-          <ResponsiveContainer width="100%" height="85%">
-            <BarChart data={monthlyData}>
-              <XAxis dataKey="month" />
-              <YAxis />
-              <BarTooltip />
-              <Bar dataKey="count" fill="#8884d8" />
-            </BarChart>
-          </ResponsiveContainer>
+    <div className="p-4">
+      <h1 className="text-2xl font-bold mb-6">Dashboard</h1>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Bar Chart */}
+        <div className="bg-white rounded shadow p-4">
+          <h2 className="text-lg font-semibold mb-2">Pengunjung per Bulan</h2>
+          <div className="w-full h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={monthlyData}>
+                <XAxis dataKey="month" />
+                <YAxis />
+                <BarTooltip />
+                <Bar dataKey="count" fill="#8884d8" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
         </div>
 
-        {/* Pie chart: dept percentage */}
-        <div className="bg-white p-4 rounded shadow h-96">
-          <h2 className="text-lg mb-2">Persentase per Departemen</h2>
-          <ResponsiveContainer width="100%" height="85%">
-            <PieChart>
-              <Pie
-                data={pieData}
-                dataKey="value"
-                nameKey="name"
-                label={({ name, value }) => `${name}: ${value.toFixed(1)}%`}
-              >
-                {pieData.map((_, i) => (
-                  <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                ))}
-              </Pie>
-              <Legend />
-              <PieTooltip formatter={(val: number) => `${val.toFixed(1)}%`} />
-            </PieChart>
-          </ResponsiveContainer>
+        {/* Pie Chart */}
+        <div className="bg-white rounded shadow p-4">
+          <h2 className="text-lg font-semibold mb-2">Persentase per Departemen</h2>
+          <div className="w-full h-64">
+            <ResponsiveContainer width="100%" height="100%">
+<PieChart>
+  <Pie
+    data={pieData}
+    dataKey="value"
+    nameKey="name"
+    label={({ cx, cy, midAngle, innerRadius, outerRadius, percent }) => {
+      // Hitung posisi label di tengah slice
+      const RADIAN = Math.PI / 180;
+      const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
+      const x = cx + radius * Math.cos(-midAngle * RADIAN);
+      const y = cy + radius * Math.sin(-midAngle * RADIAN);
+      return (
+        <text
+          x={x}
+          y={y}
+          fill="#333"
+          textAnchor="middle"
+          dominantBaseline="central"
+          fontSize={12}
+        >
+          {`${percent ? (percent * 100).toFixed(1) : 0}%`}
+        </text>
+      );
+    }}
+    labelLine={false}
+  >
+    {pieData.map((_, idx) => (
+      <Cell key={idx} fill={COLORS[idx % COLORS.length]} />
+    ))}
+  </Pie>
+  <Legend layout="horizontal" verticalAlign="bottom" />
+  <PieTooltip formatter={(value: number) => `${value.toFixed(1)}%`} />
+</PieChart>
+            </ResponsiveContainer>
+          </div>
         </div>
-      </div>
 
-      {/* Bottom row: summary & last check-in */}
-      <div className="grid grid-cols-2 gap-6">
-        {/* Summary per bulan */}
-        <div className="bg-white p-4 rounded shadow">
-          <h2 className="text-lg mb-4">Ringkasan Bulanan</h2>
-          <p><strong>Bulan ini ({currentMonth}):</strong> {currentCount} pengunjung</p>
-          <p><strong>Total tahun ini:</strong> {yearTotal} pengunjung</p>
-          {delta !== null && (
-            <p>
-              <strong>Perbandingan vs bulan lalu:</strong>{' '}
-              {delta >= 0 ? '+' : ''}{delta}% ({prevMonth})
-            </p>
-          )}
+        {/* Monthly Summary */}
+        <div className="bg-white rounded shadow p-4">
+          <h2 className="text-lg font-semibold mb-2">Ringkasan Bulanan</h2>
+          <p>Bulan ini ({new Date().toISOString().slice(0,7)}): <strong>{summary.thisMonthCount}</strong> pengunjung</p>
+          <p>Total tahun ini: <strong>{summary.yearToDateCount}</strong> pengunjung</p>
         </div>
 
-        {/* Last check-in */}
-        <div className="bg-white p-4 rounded shadow">
-          <h2 className="text-lg mb-4">Last Check-In</h2>
-          {last ? (
+        {/* Last Check-Ins */}
+        <div className="bg-white rounded shadow p-4">
+          <h2 className="text-lg font-semibold mb-2">Last Check-In</h2>
+          {lastRows.length > 0 ? (
             <table className="min-w-full table-auto border-collapse">
               <thead>
-                <tr className="bg-gray-200">
-                  <th className="px-4 py-2 border">Name</th>
-                  <th className="px-4 py-2 border">Timestamp</th>
-                  <th className="px-4 py-2 border">Department</th>
+                <tr className="bg-gray-100">
+                  <th className="px-4 py-2 border">No</th>
+                  <th className="px-4 py-2 border">Nama</th>
+                  <th className="px-4 py-2 border">Departemen</th>
+                  <th className="px-4 py-2 border">Waktu</th>
                 </tr>
               </thead>
               <tbody>
-                <tr>
-                  <td className="px-4 py-2 border">{last.name}</td>
-                  <td className="px-4 py-2 border">
-                    {new Date(last.timestamp).toLocaleString()}
-                  </td>
-                  <td className="px-4 py-2 border">{last.department}</td>
-                </tr>
+                {lastRows.map((r, i) => (
+                  <tr key={i} className="hover:bg-gray-50">
+                    <td className="px-4 py-2 border">{i+1}</td>
+                    <td className="px-4 py-2 border">{r.name}</td>
+                    <td className="px-4 py-2 border">{r.department}</td>
+                    <td className="px-4 py-2 border">{new Date(r.timestamp).toLocaleString()}</td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           ) : (

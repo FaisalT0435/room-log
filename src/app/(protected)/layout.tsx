@@ -1,25 +1,25 @@
+
 // src/app/(protected)/layout.tsx
 'use client';
 
-import React, { ReactNode } from 'react';
-import Navbar from '@/components/Navbar';
-import '../globals.css';
+import Background from '@/components/Background';
+import Navbar     from '@/components/Navbar';
+import '@/app/globals.css';   // pastikan Tailwind & vars sudah ter-import
 
-export default function ProtectedLayout({ children }: { children: ReactNode }) {
+export default function ProtectedLayout({ children }: { children: React.ReactNode }) {
   return (
     <>
-      {/* Navbar at top */}
+      {/* background Vanta Birds di belakang */}
+      <Background />
+
+      {/* navbar dan konten protected */}
       <Navbar />
-
-      {/* Main content area; white background and repeated watermark */}
-      <main className="flex-grow p-6 protected-bg text-black">
-        {children}
-      </main>
-
-      {/* Footer: always at bottom */}
-      <footer className="bg-white text-center text-black py-4">
-        © {new Date().getFullYear()} Your Company. All rights reserved.
+      <main className="pt-16 text-black">{children}</main>
+      <footer className="text-center text-black py-4">
+        © {new Date().getFullYear()} PT. XXXXX . All rights reserved.
       </footer>
     </>
   );
 }
+
+

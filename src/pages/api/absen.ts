@@ -28,8 +28,8 @@ export default withSessionRoute(async (req: NextApiRequest, res: NextApiResponse
   }
 
   // 4) Validate inputs
-  const { name, nik, remarks, timestamp } = req.body;
-  if (!name || !nik || !timestamp) {
+  const { name, nik, department, remarks, timestamp } = req.body;
+  if (!name || !nik || !department || !timestamp) {
     return res.status(400).json({ ok: false, message: 'Missing form fields' });
   }
   if (!req.file) {
@@ -44,13 +44,13 @@ export default withSessionRoute(async (req: NextApiRequest, res: NextApiResponse
     // 6) Insert into MySQL
     const db = getDB();
     await db.execute(
-      `INSERT INTO logbook
+      `INSERT INTO Logbook
          (name, nik, department, remarks, photo_url, timestamp)
        VALUES (?, ?, ?, ?, ?, ?)`,
       [
         name,
         nik,
-        req.session.user.username,
+        department,
         remarks || null,
         photoUrl,
         new Date(timestamp),

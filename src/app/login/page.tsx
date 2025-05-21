@@ -44,7 +44,7 @@ export default function LoginPage() {
             height={100}
             className="mx-auto"
           />
-          <h2 className="mt-4 text-2xl font-semibold text-gray-800">Welcome</h2>
+          <h2 className="mt-4 text-2xl font-semibold text-gray-800">Welcome Room Monitor</h2>
         </div>
         <form onSubmit={submit} className="space-y-4">
           <input
