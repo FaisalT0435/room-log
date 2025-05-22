@@ -1,36 +1,114 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Room Logbook Application
 
-## Getting Started
+## Prerequisites
 
-First, run the development server:
+* **Node.js** v16+ and npm
+* **Git**
+* **MySQL** database (e.g., Amazon RDS)
+* **AWS S3** bucket
+* **Prisma CLI** (installed globally or via npx)
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## Installation
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+1. **Clone the repository**
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+   ```bash
+   git clone https://github.com/your-org/room-logbook.git
+   cd room-logbook
+   ```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+2. **Install dependencies**
 
-## Learn More
+   ```bash
+   npm install
+   ```
 
-To learn more about Next.js, take a look at the following resources:
+3. **Prisma setup**
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+   * Copy the Prisma schema and generate client:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+     ```bash
+     npx prisma generate
+     ```
 
-## Deploy on Vercel
+   * Run any pending migrations (or create one):
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+     ```bash
+     npx prisma migrate dev --name init
+     ```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+4. **Environment variables**
+
+   Create a file named `.env` in the project root with the following keys:
+
+   ```dotenv
+   DATABASE_URL="mysql://USER:PASSWORD@HOST:3306/DATABASE_NAME"
+   S3_BUCKET="your-s3-bucket-name"
+   AWS_REGION="ap-southeast-3"
+   AWS_ACCESS_KEY_ID="YOUR_AWS_ACCESS_KEY_ID"
+   AWS_SECRET_ACCESS_KEY="YOUR_AWS_SECRET_ACCESS_KEY"
+   SESSION_PASSWORD="a_long_secure_password"
+   ```
+
+5. **Seed data (optional)**
+
+   If you have a seed script:
+
+   ```bash
+   npm run prisma:seed
+   ```
+
+## Running the Application
+
+* **Development mode**
+
+  ```bash
+  npm run dev
+  ```
+
+  Next.js will start at `http://localhost:3000`.
+
+* **Production build**
+
+  ```bash
+  npm run build
+  npm start
+  ```
+
+## App Structure
+
+* `src/app/(protected)/...` — Protected pages (Dashboard, Absen, Summary)
+* `src/app/login/...` — Login & Forgot Password
+* `src/pages/api/...` — API routes (auth, dashboard, summary, absen)
+* `src/lib` — Database and session helpers
+* `src/app/components` — Navbar, Background, Vanta effects
+
+## Database
+
+* Configured via **Prisma** in `prisma/schema.prisma`.
+* Tables:
+
+  * `User` (for session/auth)
+  * `Logbook` (name, nik, department, remarks, photo\_url, timestamp)
+
+## AWS S3
+
+* Photo uploads (`/api/absen`) store to S3 bucket.
+* Photo URLs are saved in MySQL and served via presigned URLs.
+
+## Environment
+
+Ensure you are in the correct AWS IAM environment with permissions to:
+
+* `s3:PutObject`, `s3:GetObject`
+* RDS MySQL connectivity
+
+## Troubleshooting
+
+* **Session errors**: Verify `SESSION_PASSWORD` matches in `.env` and `sessionOptions`.
+* **Database errors**: Check `DATABASE_URL` format and connectivity to MySQL.
+* **S3 errors**: Ensure bucket name & region are correct, and IAM user has S3 permissions.
+
+---
+
+© {new Date().getFullYear()} Faisal Tri Surya. All rights reserved.
