@@ -16,7 +16,7 @@ export default function ForgotPasswordPage() {
     <div className="min-h-screen bg-red-500 flex items-center justify-center">
       <div className="bg-white rounded-lg shadow-lg p-8 w-full max-w-md">
         <div className="mb-6 text-center">
-          <Image src="/logo.png" alt="Logo" width={100} height={100} />
+          <Image src="logo//logo.png" alt="Logo" width={100} height={100} />
           <h2 className="mt-4 text-2xl font-semibold text-gray-800">Forgot Password</h2>
         </div>
         <form onSubmit={submit} className="space-y-4">

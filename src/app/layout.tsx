@@ -1,9 +1,10 @@
 // src/app/layout.tsx
+import { link } from 'fs'
 import './globals.css'
 import { ReactNode } from 'react'
 
 export const metadata = {
-  title: 'Logbook App',
+  title: 'RoomLog App',
   description: 'Aplikasi pencatatan masuk ruangan',
 }
 

@@ -82,7 +82,7 @@ export default function Navbar() {
 
       {/* Logo + Logout bottom-right */}
       <div className="absolute right-4 bottom-1 flex items-center space-x-2">
-        <Image src="/logo/image.png" alt="Logo" width={32} height={32} />
+        <Image src="/logo/logo.png" alt="Logo" width={32} height={32} />
         <button onClick={handleLogout} className="hover:underline">
           Logout
         </button>
