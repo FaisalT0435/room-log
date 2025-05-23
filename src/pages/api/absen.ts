@@ -7,9 +7,16 @@ import { runMiddleware } from '@/lib/run-middleware';
 import { getDB } from '@/lib/db';
 import { uploadToS3 } from '@/lib/s3';
 
+// Tambahkan setelah import
+interface MulterRequest extends NextApiRequest {
+  file?: Express.Multer.File;
+}
+
+
 const upload = multer();  // in‐memory storage
 
-export default withSessionRoute(async (req: NextApiRequest, res: NextApiResponse) => {
+
+export default withSessionRoute(async (req: MulterRequest, res: NextApiResponse) => {
   // 1) Only allow POST
   if (req.method !== 'POST') {
     return res.status(405).json({ ok: false, message: 'Method not allowed' });
@@ -21,7 +28,7 @@ export default withSessionRoute(async (req: NextApiRequest, res: NextApiResponse
 
   // 3) Parse multipart form
   try {
-    await runMiddleware(req, res, upload.single('photo'));
+    await runMiddleware(req as any, res as any, upload.single('photo') as any);
   } catch (err: any) {
     console.error('⚠️ Multer parsing error:', err);
     return res.status(400).json({ ok: false, message: 'Error parsing file' });
